@@ -1,0 +1,28 @@
+# Sensitive data — never commit
+data/accounts.txt
+data/accounts.json
+data/accounts.json.tmp
+data/solana_accounts.txt
+data/proxies.txt
+data/new_proxies.txt
+data/new_proxies_2.txt
+data/04.txt
+data/prx 02.txt
+data/raw_proxies.txt
+data/dailyspin revveadl xstock check.txt
+data/spare_vn_proxies.txt
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+task/
