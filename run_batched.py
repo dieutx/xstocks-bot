@@ -9,9 +9,22 @@ import random
 import sys
 import os
 import json
+import time
 from datetime import datetime
+from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+PROJECT_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(PROJECT_DIR))
+
+# Load simple KEY=VALUE pairs from .env if present so manual runs behave like cron.
+env_file = PROJECT_DIR / ".env"
+if env_file.exists():
+    for line in env_file.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip())
 
 from data.db import (
     load_db, save_db, mark_registered, mark_gm_done, make_batches,
@@ -28,7 +41,23 @@ from utils.logger import log_info, log_success, log_error, log_warning, print_ba
 from utils.telegram import send_telegram_summary, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 
 API_BASE = "https://api.backed.fi/xdrop/api/v1"
-SPIN_MESSAGE = "Daily Spin Multiplier"
+SPIN_MESSAGE_PREFIX = "Reveal daily spin multiplier"
+FATAL_API_STATUSES = {400, 401, 403, 404, 422}
+
+
+def is_fatal_api_contract_error(status: int, data: object | None = None) -> bool:
+    """Return True for likely API contract/auth/signature errors that should stop the bot."""
+    if status not in FATAL_API_STATUSES:
+        return False
+    text = str(data or "").lower()
+    non_fatal_markers = (
+        "already done",
+        "already revealed",
+        "already exists",
+        "click limit",
+        "not available",
+    )
+    return not any(marker in text for marker in non_fatal_markers)
 
 
 async def alert_telegram(message: str) -> None:
@@ -123,6 +152,8 @@ async def run_single_account(
                     log_info("Already registered (confirmed)", 0, short_addr)
                     mark_registered(db, address)
                 else:
+                    if is_fatal_api_contract_error(status, data):
+                        raise RuntimeError(f"FATAL API ERROR during registration [{status}]: {str(data)[:160]}")
                     log_error(f"Registration failed [{status}]: {str(data)[:100]}", 0, short_addr)
                     result["details"] = f"Registration failed [{status}]"
                     return result
@@ -131,12 +162,10 @@ async def run_single_account(
             else:
                 log_warning(f"User check failed [{status}], skipping registration", 0, short_addr)
 
-        # --- Step 3: Check if GM needed ---
+        # --- Step 3: Determine actual server-side state from dashboard ---
+        # Do NOT trust local gm_last_date as the source of truth. The site can
+        # still show GM/spin available if server state and local cached date drift.
         today = datetime.now().strftime("%Y-%m-%d")
-        if acc_data.get("gm_last_date") == today:
-            result["status"] = "SUCCESS"
-            result["details"] = "GM: already done today"
-            return result
 
         # --- Step 4: Dashboard ---
         if mode == "register_gm":
@@ -170,8 +199,15 @@ async def run_single_account(
         spin_revealed = dash_data.get("dailySpinMultiplierRevealed") if dash_data else None
         if spin_revealed is False:
             log_info("Revealing spin multiplier...", 0, short_addr)
-            sig = sign_message(signer, SPIN_MESSAGE, wallet_type)
-            spin_payload = {"walletAddress": address, "signature": sig}
+            sign_ts = int(time.time())
+            spin_msg = f"{SPIN_MESSAGE_PREFIX} | {sign_ts}"
+            sig = sign_message(signer, spin_msg, wallet_type)
+            spin_payload = {
+                "walletAddress": address,
+                "signature": sig,
+                "signMethod": "message",
+                "signTimestamp": sign_ts,
+            }
 
             for spin_attempt in range(1, 4):
                 spin_status, spin_data = await api_put(
@@ -181,6 +217,8 @@ async def run_single_account(
                     log_success("Spin revealed!", 0, short_addr)
                     break
                 elif spin_status in (400, 409):
+                    if is_fatal_api_contract_error(spin_status, spin_data):
+                        raise RuntimeError(f"FATAL API ERROR during spin reveal [{spin_status}]: {str(spin_data)[:160]}")
                     log_info("Spin already done", 0, short_addr)
                     break
                 elif spin_status == 429:
@@ -233,6 +271,8 @@ async def run_single_account(
                 gm_success = True
                 break
             elif gm_status in (400, 409):
+                if is_fatal_api_contract_error(gm_status, gm_data):
+                    raise RuntimeError(f"FATAL API ERROR during GM [{gm_status}]: {str(gm_data)[:160]}")
                 log_info("GM already done (click limit)", 0, short_addr)
                 mark_gm_done(db, address)
                 result["status"] = "SUCCESS"
@@ -292,6 +332,8 @@ async def run_batch(
     processed = []
     for i, r in enumerate(results):
         if isinstance(r, Exception):
+            if "FATAL API ERROR" in str(r):
+                raise r
             processed.append({
                 "address": batch[i]["address"],
                 "status": "FAILED",
@@ -316,7 +358,10 @@ async def run_all_batched(mode: str = "register_gm") -> None:
     if mode == "register_gm":
         pending = [a for a in db if not a.get("registered") or a.get("gm_last_date") != today]
     else:
-        pending = get_accounts_needing_gm(db, today)
+        # In GM-only mode, process all registered accounts and let live dashboard
+        # state decide whether GM/spin are still available. Local gm_last_date is
+        # only a cache and may drift from the server's actual reset/status.
+        pending = [a for a in db if a.get("registered", True)]
 
     if not pending:
         log_info("All accounts up to date!")

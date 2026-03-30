@@ -6,5 +6,4 @@ source venv/bin/activate
 if [ -f .env ]; then
   set -a && . ./.env && set +a
 fi
-export CRON_RUN=1
-python run_batched.py gm
+python progress_report.py

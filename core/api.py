@@ -707,7 +707,7 @@ async def get_user_info(account: BotAccount) -> dict | None:
         return None
 
 
-SPIN_MESSAGE = "Reveal daily spin multiplier"
+SPIN_MESSAGE_PREFIX = "Reveal daily spin multiplier"
 
 
 async def daily_spin_multiplier(account: "BotAccount") -> bool:
@@ -728,8 +728,12 @@ async def daily_spin_multiplier(account: "BotAccount") -> bool:
 
     log_info("Revealing daily spin multiplier...", account.index, account.address)
 
+    import time
+    sign_ts = int(time.time())
+    spin_msg = f"{SPIN_MESSAGE_PREFIX} | {sign_ts}"
+
     try:
-        raw_sig = account.sign_message(SPIN_MESSAGE)
+        raw_sig = account.sign_message(spin_msg)
         if account.wallet_type == "Evm":
             signature = raw_sig if raw_sig.startswith("0x") else f"0x{raw_sig}"
         else:
@@ -741,6 +745,8 @@ async def daily_spin_multiplier(account: "BotAccount") -> bool:
     payload = {
         "walletAddress": account.address,
         "signature": signature,
+        "signMethod": "message",
+        "signTimestamp": sign_ts,
     }
 
     max_attempts = 3

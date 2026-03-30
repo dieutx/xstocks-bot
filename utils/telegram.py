@@ -4,8 +4,19 @@ Telegram notification for xStocks bot daily run summaries.
 
 import aiohttp
 from datetime import datetime
+from pathlib import Path
 
 import os
+
+# Load .env for direct/manual usage paths too.
+env_file = Path(__file__).resolve().parent.parent / ".env"
+if env_file.exists():
+    for line in env_file.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip())
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
