@@ -18,7 +18,7 @@ from config import (
     SIWE_STATEMENT,
     CHAIN_ID,
     REFERRAL_CODE,
-    REGISTER_MESSAGE,
+    REGISTER_MESSAGE_PREFIX,
     SAY_GM_MESSAGE,
     GM_CLICK_DELAY_MIN,
     GM_CLICK_DELAY_MAX,
@@ -386,14 +386,17 @@ async def register_user(account: "BotAccount | SolanaAccount") -> bool:
         log_error("No session available", account.index, account.address)
         return False
 
+    import time as _time
     wallet_type = account.wallet_type  # "Evm" or "Solana"
     log_info(f"Signing registration message ({wallet_type})...", account.index, account.address)
     try:
-        raw_sig = account.sign_message(REGISTER_MESSAGE)
+        reg_ts = int(_time.time())
+        reg_msg = f"{REGISTER_MESSAGE_PREFIX} | {reg_ts}"
+        raw_sig = account.sign_message(reg_msg)
         if wallet_type == "Evm":
             signature = raw_sig if raw_sig.startswith("0x") else f"0x{raw_sig}"
         else:
-            signature = raw_sig  # Solana: base58 encoded Ed25519 signature
+            signature = raw_sig  # Solana: base64 encoded Ed25519 signature
     except Exception as e:
         log_error(f"Failed to sign registration message: {e}", account.index, account.address)
         return False
@@ -402,6 +405,8 @@ async def register_user(account: "BotAccount | SolanaAccount") -> bool:
         "walletAddress": account.address,
         "walletType": wallet_type,
         "signature": signature,
+        "signMethod": "message",
+        "signTimestamp": reg_ts,
         "referredBy": REFERRAL_CODE,
     }
 
@@ -547,13 +552,16 @@ async def backed_say_gm(account: BotAccount) -> int:
         log_error("No session available", account.index, account.address)
         return 0
 
+    import time as _time
     log_info("Signing Say GM message...", account.index, account.address)
     try:
-        raw_sig = account.sign_message(SAY_GM_MESSAGE)
+        gm_ts = int(_time.time())
+        gm_msg = f"{SAY_GM_MESSAGE} | {gm_ts}"
+        raw_sig = account.sign_message(gm_msg)
         if account.wallet_type == "Evm":
             signature = raw_sig if raw_sig.startswith("0x") else f"0x{raw_sig}"
         else:
-            signature = raw_sig  # Solana: base58
+            signature = raw_sig  # Solana: base64
     except Exception as e:
         log_error(f"Failed to sign Say GM message: {e}", account.index, account.address)
         return 0
@@ -561,6 +569,8 @@ async def backed_say_gm(account: BotAccount) -> int:
     payload = {
         "walletAddress": account.address,
         "signature": signature,
+        "signMethod": "message",
+        "signTimestamp": gm_ts,
     }
 
     success_count = 0

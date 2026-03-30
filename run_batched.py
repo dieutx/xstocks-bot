@@ -36,7 +36,7 @@ from core.http_client import (
 )
 from core.account import BotAccount
 from core.solana_account import SolanaAccount
-from config import REFERRAL_CODE, SAY_GM_MESSAGE, REGISTER_MESSAGE
+from config import REFERRAL_CODE, SAY_GM_MESSAGE, REGISTER_MESSAGE_PREFIX
 from utils.logger import log_info, log_success, log_error, log_warning, print_banner
 from utils.telegram import send_telegram_summary, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 
@@ -136,11 +136,15 @@ async def run_single_account(
             elif status == 404 or (status == 200 and not data):
                 # Register
                 log_info(f"Registering {wallet_type}...", 0, short_addr)
-                sig = sign_message(signer, REGISTER_MESSAGE, wallet_type)
+                reg_ts = int(time.time())
+                reg_msg = f"{REGISTER_MESSAGE_PREFIX} | {reg_ts}"
+                sig = sign_message(signer, reg_msg, wallet_type)
                 payload = {
                     "walletAddress": address,
                     "walletType": wallet_type,
                     "signature": sig,
+                    "signMethod": "message",
+                    "signTimestamp": reg_ts,
                     "referredBy": REFERRAL_CODE,
                 }
                 status, data = await api_post(session, f"{API_BASE}/xdrop-user", payload, fp)
@@ -251,8 +255,15 @@ async def run_single_account(
             await asyncio.sleep(weighted_delay(0.1, 0.5))
 
         log_info(f"Say GM (remaining: {gm_remaining})...", 0, short_addr)
-        sig = sign_message(signer, SAY_GM_MESSAGE, wallet_type)
-        gm_payload = {"walletAddress": address, "signature": sig}
+        gm_ts = int(time.time())
+        gm_msg = f"{SAY_GM_MESSAGE} | {gm_ts}"
+        sig = sign_message(signer, gm_msg, wallet_type)
+        gm_payload = {
+            "walletAddress": address,
+            "signature": sig,
+            "signMethod": "message",
+            "signTimestamp": gm_ts,
+        }
 
         # Retry GM up to 3 times with dashboard verification
         gm_success = False

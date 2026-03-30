@@ -42,7 +42,7 @@ ENDPOINTS: dict[str, str] = {
 
 # --- Registration ---
 REFERRAL_CODE: str = "YOUR_REFERRAL_CODE"
-REGISTER_MESSAGE: str = "By signing this message, I confirm wallet ownership and register for xPoints"
+REGISTER_MESSAGE_PREFIX: str = "By signing this message, I confirm wallet ownership and register for xPoints"
 SAY_GM_MESSAGE: str = "Say GM"
 
 # --- Human-like Delays ---
