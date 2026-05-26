@@ -72,7 +72,7 @@ def build_headers(fingerprint: dict, method: str = "GET") -> dict:
         "sec-ch-ua-platform": f'"{fingerprint["platform"]}"',
         "sec-fetch-dest": "empty",
         "sec-fetch-mode": "cors",
-        "sec-fetch-site": "cross-site",
+        "sec-fetch-site": "same-site",
         "user-agent": fingerprint["user_agent"],
     })
 

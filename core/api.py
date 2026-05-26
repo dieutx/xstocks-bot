@@ -117,7 +117,7 @@ _NOT_FOUND = object()  # Sentinel: account definitively does not exist
 async def get_xdrop_user(account: "BotAccount") -> dict | None | object:
     """
     Check if a wallet is already registered on xDrop.
-    GET https://api.backed.fi/xdrop/api/v1/xdrop-user/{walletAddress}
+    GET https://points-api.xstocks.fi/api/v1/xdrop-user/{walletAddress}
 
     Returns:
         User data dict if registered, _NOT_FOUND if definitively not registered,

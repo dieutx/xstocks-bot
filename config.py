@@ -16,7 +16,7 @@ API_BASE_URL: str = "https://defi.xstocks.fi/api"
 PLATFORM_URL: str = "https://defi.xstocks.fi"
 
 # --- Backed API (xDrop tasks) ---
-BACKED_API_BASE_URL: str = "https://api.backed.fi/xdrop/api/v1"
+BACKED_API_BASE_URL: str = "https://points-api.xstocks.fi/api/v1"
 
 # SIWE (Sign-In with Ethereum) configuration
 SIWE_DOMAIN: str = "defi.xstocks.fi"

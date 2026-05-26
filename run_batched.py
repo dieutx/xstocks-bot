@@ -40,7 +40,7 @@ from config import REFERRAL_CODE, SAY_GM_MESSAGE, REGISTER_MESSAGE_PREFIX
 from utils.logger import log_info, log_success, log_error, log_warning, print_banner
 from utils.telegram import send_telegram_summary, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 
-API_BASE = "https://api.backed.fi/xdrop/api/v1"
+API_BASE = "https://points-api.xstocks.fi/api/v1"
 SPIN_MESSAGE_PREFIX = "Reveal daily spin multiplier"
 FATAL_API_STATUSES = {400, 401, 403, 404, 422}
 

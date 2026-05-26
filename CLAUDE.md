@@ -61,13 +61,13 @@ Automation bot for xStocks DeFi platform. Manages multiple wallets (EVM + Solana
 
 ## API Endpoints
 
-- Config: `GET https://api.backed.fi/xdrop/api/v1/xdrop-config`
-- Register: `POST https://api.backed.fi/xdrop/api/v1/xdrop-user`
-- Check user: `GET https://api.backed.fi/xdrop/api/v1/xdrop-user/{wallet}`
-- Dashboard: `GET https://api.backed.fi/xdrop/api/v1/xdrop-user/{wallet}/dashboard`
-- Points breakdown: `GET https://api.backed.fi/xdrop/api/v1/xdrop-user/{wallet}/points-breakdown`
-- Daily spin: `PUT https://api.backed.fi/xdrop/api/v1/xdrop-user/daily-spin-multiplier`
-- Say GM: `POST https://api.backed.fi/xdrop/api/v1/xdrop-user/say-gm`
+- Config: `GET https://points-api.xstocks.fi/api/v1/xdrop-config`
+- Register: `POST https://points-api.xstocks.fi/api/v1/xdrop-user`
+- Check user: `GET https://points-api.xstocks.fi/api/v1/xdrop-user/{wallet}`
+- Dashboard: `GET https://points-api.xstocks.fi/api/v1/xdrop-user/{wallet}/dashboard`
+- Points breakdown: `GET https://points-api.xstocks.fi/api/v1/xdrop-user/{wallet}/points-breakdown`
+- Daily spin: `PUT https://points-api.xstocks.fi/api/v1/xdrop-user/daily-spin-multiplier`
+- Say GM: `POST https://points-api.xstocks.fi/api/v1/xdrop-user/say-gm`
 
 ## Signature Formats
 

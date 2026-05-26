@@ -14,6 +14,7 @@ data/spare_vn_proxies.txt
 
 # Logs
 *.log
+state/
 
 # Python
 __pycache__/
