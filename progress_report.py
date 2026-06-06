@@ -1,4 +1,4 @@
-"""Send progress report to Telegram while the daily run is still incomplete."""
+"""Send progress report to Telegram while daily reveal is still incomplete."""
 import asyncio
 import sys
 import os
@@ -38,13 +38,16 @@ async def send_progress():
         return
 
     reg = sum(1 for a in db if a.get("registered"))
-    gm = sum(1 for a in db if a.get("gm_last_date") == today)
 
-    result = subprocess.run(["pgrep", "-f", "python.*run_batched.py"], capture_output=True)
-    is_running = result.returncode == 0
+    verify = subprocess.run(
+        [str(PROJECT_DIR / "venv/bin/python3"), str(PROJECT_DIR / "verify_daily_status.py")],
+        capture_output=True,
+        text=True,
+    )
+    is_reveal_complete = verify.returncode == 0
 
-    if not is_running and gm >= total:
-        print(f"[{now}] Daily run already complete; no progress message needed")
+    if is_reveal_complete:
+        print(f"[{now}] Daily reveal already complete; no progress message needed")
         return
 
     try:
@@ -62,16 +65,15 @@ async def send_progress():
     except Exception:
         last_batch = "N/A"
 
-    running = "🟢 Running" if is_running else "🟡 Waiting / Partial"
+    running = "🟢 Reveal complete" if is_reveal_complete else "🟡 Waiting / Partial"
     remaining_reg = total - reg
-    remaining_gm = total - gm
 
     msg = (
         f"📊 <b>XStock Bot — Progress Update</b>\n"
         f"🕐 {now}\n\n"
         f"📝 Registered: <b>{reg}/{total}</b> ({reg * 100 // total}%)\n"
-        f"✅ GM today: <b>{gm}/{total}</b> ({gm * 100 // total}%)\n"
-        f"⏳ Remaining: <b>{remaining_reg}</b> registration, <b>{remaining_gm}</b> GM\n\n"
+        f"🎯 Reveal today: <b>incomplete</b>\n"
+        f"⏳ Remaining: <b>{remaining_reg}</b> registration\n\n"
         f"Status: {running}\n"
         f"Last: {last_batch}"
     )

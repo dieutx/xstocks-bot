@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Verify xStocks daily status across registered accounts.
+"""Verify xStocks daily reveal status across registered accounts.
 
 Exit codes:
-  0 = all registered accounts have GM done and daily spin revealed
+  0 = all registered accounts have daily spin revealed
   1 = at least one account is incomplete or unreachable
   2 = no accounts configured
 """
@@ -55,15 +55,13 @@ async def check_account(acc: dict, sem: asyncio.Semaphore) -> dict:
                     "reason": "dashboard_payload_not_dict",
                 }
 
-            gm_remaining = int(data.get("gmClicksRemaining") or 0)
             spin_revealed = data.get("dailySpinMultiplierRevealed")
-            ok = gm_remaining == 0 and spin_revealed is not False
+            ok = spin_revealed is not False
             return {
                 "address": address,
                 "ok": ok,
-                "gm_remaining": gm_remaining,
                 "spin_revealed": spin_revealed,
-                "reason": None if ok else f"gm_remaining={gm_remaining}, spin_revealed={spin_revealed}",
+                "reason": None if ok else f"spin_revealed={spin_revealed}",
             }
         except Exception as exc:
             return {
